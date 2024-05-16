@@ -92,11 +92,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FFmpegUtils.cpp" />
     <QtRcc Include="QtVideoBox.qrc" />
     <QtUic Include="QtVideoBox.ui" />
     <QtMoc Include="QtVideoBox.h" />
     <ClCompile Include="QtVideoBox.cpp" />
     <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="FFmpegUtils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
