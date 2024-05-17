@@ -1,0 +1,62 @@
+name: Build and Package for Windows
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and Package
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Qt
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: '6.6.2'
+
+      - name: Set up Visual Studio
+        uses: microsoft/setup-msbuild@v1.0.2
+
+
+      - name: Set up Qt environment
+        run: |
+          echo Setting up Qt environment
+          set PATH=%Qt6_DIR%\bin;%PATH%
+          set QMAKESPEC=win32-msvc
+          set _ROOT=%Qt6_DIR%
+          set QMAKEFEATURES=%_ROOT%\mkspecs\features;%QMAKEFEATURES%
+          mkdir QtMsBuild
+          echo ^<?xml version="1.0" encoding="utf-8"?^> > QtMsBuild\Qt.props
+          echo ^<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"^> >> QtMsBuild\Qt.props
+          echo   ^<ImportGroup Label="PropertySheets" Condition="'$$(Configuration)|$$(Platform)' == 'Release|x64'"^> >> QtMsBuild\Qt.props
+          echo     ^<Import Project="$$(UserRootDir)\Microsoft.Cpp.$$(Platform).user.props" Condition="exists('$$(UserRootDir)\Microsoft.Cpp.$$(Platform).user.props')" Label="LocalAppDataPlatform" /^> >> QtMsBuild\Qt.props
+          echo     ^<Import Project="$$(Qt6_DIR)\lib\cmake\Qt6\Qt6Targets.cmake" Condition="exists('$$(Qt6_DIR)\lib\cmake\Qt6\Qt6Targets.cmake')" /^> >> QtMsBuild\Qt.props
+          echo   ^</ImportGroup^> >> QtMsBuild\Qt.props
+          echo   ^<PropertyGroup Label="UserMacros" /^> >> QtMsBuild\Qt.props
+          echo   ^<PropertyGroup^> >> QtMsBuild\Qt.props
+          echo     ^<Qt6InstallDir^>$$_ROOT^</Qt6InstallDir^> >> QtMsBuild\Qt.props
+          echo     ^<Qt6Dir^>$$(Qt6InstallDir)^</Qt6Dir^> >> QtMsBuild\Qt.props
+          echo   ^</PropertyGroup^> >> QtMsBuild\Qt.props
+          echo   ^<Import Project="$$(Qt6Dir)\lib\cmake\Qt6\Qt6Config.cmake" Condition="exists('$$(Qt6Dir)\lib\cmake\Qt6\Qt6Config.cmake')" /^> >> QtMsBuild\Qt.props
+          echo ^</Project^> >> QtMsBuild\Qt.props
+        shell: cmd
+        
+      - name: Build with MSBuild
+        run: msbuild QtVideoBox.sln /p:Configuration=Release
+
+      - name: Deploy Qt dependencies
+        run: |
+          windeployqt.exe --release x64\Release\QtVideoBox.exe
+        shell: cmd
+
+      - name: Compress artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: release
+          path: x64\Release
